@@ -1,5 +1,8 @@
 from flask import Flask, request, send_file
 from plugins.master import download_content
+import threading
+from telegram.ext import Updater, CommandHandler
+import os
 
 app = Flask(__name__)
 
@@ -22,5 +25,24 @@ def index():
         </form>
     '''
 
+def start_bot():
+    TOKEN = os.environ.get('BOT_TOKEN')
+    if not TOKEN:
+        print("BOT_TOKEN not set in environment variables.")
+        return
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    def start(update, context):
+        update.message.reply_text('🤖 Hello! The TXT-Master bot is running.')
+
+    dp.add_handler(CommandHandler('start', start))
+    updater.start_polling()
+    updater.idle()
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    # Start the bot in a separate thread
+    threading.Thread(target=start_bot, daemon=True).start()
+    # Run Flask app
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
